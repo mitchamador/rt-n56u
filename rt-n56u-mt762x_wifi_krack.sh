@@ -1,16 +1,21 @@
 #!/bin/sh
 patch --strip 1 <<EOF
 diff --git a/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/ap/ap_assoc.c b/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/ap/ap_assoc.c
-index e2efdc1..5a4a212 100644
+index e2efdc1..1e6ba82 100644
 --- a/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/ap/ap_assoc.c
 +++ b/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/ap/ap_assoc.c
-@@ -1283,11 +1283,7 @@ SendAssocResponse:
+@@ -1283,11 +1283,13 @@ SendAssocResponse:
  			pFtIe = (PFT_FTIE)(ftie_ptr + 2);
  			NdisMoveMemory(pFtIe->MIC, ft_mic, FT_MIC_LEN);
  
 -			/* Install pairwise key */
 -			WPAInstallPairwiseKey(pAd, pEntry->apidx, pEntry, TRUE);
--
++			/* Only first allow install from assoc, later or rekey or instal from auth (backward compatability with not patched clients) */
++			if (pEntry->AllowInsPTK == TRUE) {
++			    WPAInstallPairwiseKey(pAd, pEntry->apidx, pEntry, TRUE);
++			    pEntry->AllowInsPTK = FALSE;
++			}
+ 
 -			/* Update status and set Port as Secured */
 -			pEntry->WpaState = AS_PTKINITDONE;
 +			/* set Port as Secured */
@@ -111,17 +116,35 @@ index 5ce09e1..47b4d43 100644
  	RALINK_TIMER_STRUCT RetryTimer;
  	NDIS_802_11_AUTHENTICATION_MODE AuthMode;	/* This should match to whatever microsoft defined */
  	NDIS_802_11_WEP_STATUS WepStatus;
+diff --git a/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/mgmt/mgmt_entrytb.c b/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/mgmt/mgmt_entrytb.c
+index b692d59..c4cf66d 100644
+--- a/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/mgmt/mgmt_entrytb.c
++++ b/trunk/proprietary/rt_wifi/rtpci/3.0.X.X/mt76x2/mgmt/mgmt_entrytb.c
+@@ -564,6 +564,8 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
+ 			pEntry->RSNIE_Len = 0;
+ 			NdisZeroMemory(pEntry->R_Counter, sizeof(pEntry->R_Counter));
+ 			pEntry->ReTryCounter = PEER_MSG1_RETRY_TIMER_CTR;
++			pEntry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;
++			pEntry->AllowInsPTK = TRUE;
+ 
+ 			if (IS_ENTRY_MESH(pEntry))
+ 				pEntry->apidx = (apidx - MIN_NET_DEVICE_FOR_MESH);
 diff --git a/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/ap/ap_assoc.c b/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/ap/ap_assoc.c
-index 1764a9c..4ddac19 100644
+index 1764a9c..7b9d12b 100644
 --- a/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/ap/ap_assoc.c
 +++ b/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/ap/ap_assoc.c
-@@ -1664,11 +1664,7 @@ SendAssocResponse:
+@@ -1664,11 +1664,13 @@ SendAssocResponse:
  			pFtIe = (PFT_FTIE)(ftie_ptr + 2);
  			NdisMoveMemory(pFtIe->MIC, ft_mic, FT_MIC_LEN);
  
 -			/* Install pairwise key */
 -			WPAInstallPairwiseKey(pAd, pEntry->func_tb_idx, pEntry, TRUE);
--
++			/* Only first allow install from assoc, later or rekey or instal from auth (backward compatability with not patched clients) */
++			if (pEntry->AllowInsPTK == TRUE) {
++			    WPAInstallPairwiseKey(pAd, pEntry->func_tb_idx, pEntry, TRUE);
++			    pEntry->AllowInsPTK = FALSE;
++			}
+ 
 -			/* Update status and set Port as Secured */
 -			pEntry->WpaState = AS_PTKINITDONE;
 +			/* set Port as Secured */
@@ -216,6 +239,20 @@ index da77ddb..a34f25c 100644
  	RALINK_TIMER_STRUCT RetryTimer;
  	NDIS_802_11_AUTHENTICATION_MODE AuthMode;	/* This should match to whatever microsoft defined */
  	NDIS_802_11_WEP_STATUS WepStatus;
+diff --git a/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/mgmt/mgmt_entrytb.c b/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/mgmt/mgmt_entrytb.c
+index 0ec6e89..6a1328f 100644
+--- a/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/mgmt/mgmt_entrytb.c
++++ b/trunk/proprietary/rt_wifi/rtpci/4.1.X.X/mt76x3/mgmt/mgmt_entrytb.c
+@@ -433,7 +433,8 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
+ 			pEntry->RSNIE_Len = 0;
+ 			NdisZeroMemory(pEntry->R_Counter, sizeof(pEntry->R_Counter));
+ 			pEntry->ReTryCounter = PEER_MSG1_RETRY_TIMER_CTR;
+-			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;			
++			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;
++			pEntry->AllowInsPTK = TRUE;
+ 
+ 			do
+ 			{
 diff --git a/trunk/proprietary/rt_wifi/rtsoc/2.7.X.X/rt2860v2/common/cmm_wpa.c b/trunk/proprietary/rt_wifi/rtsoc/2.7.X.X/rt2860v2/common/cmm_wpa.c
 index 553af2b..d4be0f3 100644
 --- a/trunk/proprietary/rt_wifi/rtsoc/2.7.X.X/rt2860v2/common/cmm_wpa.c
@@ -291,16 +328,21 @@ index efeee2d..40d23df 100644
  	RALINK_TIMER_STRUCT Start2WayGroupHSTimer;
  #ifdef TXBF_SUPPORT
 diff --git a/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/ap/ap_assoc.c b/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/ap/ap_assoc.c
-index 0dd1c10..683569c 100644
+index 0dd1c10..ffa4a66 100644
 --- a/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/ap/ap_assoc.c
 +++ b/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/ap/ap_assoc.c
-@@ -1488,11 +1488,7 @@ SendAssocResponse:
+@@ -1488,11 +1488,13 @@ SendAssocResponse:
  			pFtIe = (PFT_FTIE)(ftie_ptr + 2);
  			NdisMoveMemory(pFtIe->MIC, ft_mic, FT_MIC_LEN);
  
 -			/* Install pairwise key */
 -			WPAInstallPairwiseKey(pAd, pEntry->func_tb_idx, pEntry, TRUE);
--
++			/* Only first allow install from assoc, later or rekey or instal from auth (backward compatability with not patched clients) */
++			if (pEntry->AllowInsPTK == TRUE) {
++			    WPAInstallPairwiseKey(pAd, pEntry->func_tb_idx, pEntry, TRUE);
++			    pEntry->AllowInsPTK = FALSE;
++			}
+ 
 -			/* Update status and set Port as Secured */
 -			pEntry->WpaState = AS_PTKINITDONE;
 +			/* set Port as Secured */
@@ -395,4 +437,16 @@ index 6ff1034..7625e9d 100644
  	RALINK_TIMER_STRUCT RetryTimer;
  	NDIS_802_11_AUTHENTICATION_MODE AuthMode;	/* This should match to whatever microsoft defined */
  	NDIS_802_11_WEP_STATUS WepStatus;
+diff --git a/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/mgmt/mgmt_entrytb.c b/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/mgmt/mgmt_entrytb.c
+index 0fbd9a5..d0fa326 100644
+--- a/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/mgmt/mgmt_entrytb.c
++++ b/trunk/proprietary/rt_wifi/rtsoc/4.1.X.X/mt7628/embedded/mgmt/mgmt_entrytb.c
+@@ -692,6 +692,7 @@ MAC_TABLE_ENTRY *MacTableInsertEntry(
+ 			NdisZeroMemory(pEntry->R_Counter, sizeof(pEntry->R_Counter));
+ 			pEntry->ReTryCounter = PEER_MSG1_RETRY_TIMER_CTR;
+ 			tr_entry->PortSecured = WPA_802_1X_PORT_NOT_SECURED;
++			pEntry->AllowInsPTK = TRUE;
+ 
+ 			do
+ 			{ 
 EOF
