@@ -12,7 +12,7 @@ elif [[ ! $FREQ =~ ^[0-9]+$ ]] || [ $FREQ -lt 800 ] || [ $FREQ -gt 1200 ]; then
 fi
 
 echo "get source code from git"
-git diff --exit-code $SRC >/dev/nul || git checkout $SRC
+git diff --exit-code $SRC >/dev/null || git checkout $SRC
 
 MULT=$( expr $FREQ / 20 - 1)
 echo "set cpu frequency to "`expr \( $MULT + 1 \) \* 20`"MHz"
