@@ -4,7 +4,7 @@ FREQ=$1
 
 if [ -z $FREQ ]; then
   echo "set default frequency"
-  git diff --exit-code $SRC >/dev/nul || git checkout $SRC
+  git diff --exit-code $SRC >/dev/null || git checkout $SRC
   exit
 elif [[ ! $FREQ =~ ^[0-9]+$ ]] || [ $FREQ -lt 800 ] || [ $FREQ -gt 1200 ]; then
   echo "not valid cpu frequency (800-1200)"
