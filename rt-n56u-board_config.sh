@@ -26,6 +26,7 @@ wget -q -O ./configs/boards/$name/board.h https://github.com/mitchamador/rt-n56u
 wget -q -O ./configs/boards/$name/board.mk https://github.com/mitchamador/rt-n56u/raw/master/$name/board.mk
 wget -q -O ./configs/boards/$name/kernel-3.4.x.config https://github.com/mitchamador/rt-n56u/raw/master/$name/kernel-3.4.x.config
 ln -sf ../uclibc-mipsel.config ./configs/boards/$name/libc.config
-wget -q -O .config https://github.com/mitchamador/rt-n56u/raw/master/$name/$namel.config
+wget -q -O ./configs/templates/$namel.config https://github.com/mitchamador/rt-n56u/raw/master/$name/$namel.config
+cp ./configs/templates/$namel.config .config
 
 echo "edit .config if needed"
