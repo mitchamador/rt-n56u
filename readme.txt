@@ -21,8 +21,16 @@ wget https://github.com/mitchamador/rt-n56u/raw/master/mt7621_cpufreq.c -O - | .
 
 # vlmcsd && more (precompiled binaries)
 
-cd rt-n56u/trunk
-wget -q https://raw.githubusercontent.com/mitchamador/rt-n56u/master/rt-n56u-kms+intellij.sh -O - | bash
+cd rt-n56u
+wget -q https://raw.githubusercontent.com/mitchamador/rt-n56u/master/rt-n56u-kms+intellij.sh && chmod +x rt-n56u-kms+intellij.sh && ./rt-n56u-kms+intellij.sh
+
+add to .config
+
+### Include KMS emulator
+CONFIG_FIRMWARE_INCLUDE_KMS=y
+
+### Include Intellij IDEA License Server
+CONFIG_FIRMWARE_INCLUDE_INTELLIJ_IDEA_LICENSE_SERVER=y
 
 # wifi krack patch
 
