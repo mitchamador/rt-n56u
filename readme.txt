@@ -26,11 +26,19 @@ wget -q https://raw.githubusercontent.com/mitchamador/rt-n56u/master/rt-n56u-kms
 
 add to .config
 
+===
+
 ### Include KMS emulator
 CONFIG_FIRMWARE_INCLUDE_KMS=y
 
 ### Include Intellij IDEA License Server
 CONFIG_FIRMWARE_INCLUDE_INTELLIJ_IDEA_LICENSE_SERVER=y
+
+===
+
+to unpack
+
+sed '1,/^---- .*/d' rt-n56u-kms+intellij.sh | base64 -d | tar xzf -
 
 # wifi krack patch
 
