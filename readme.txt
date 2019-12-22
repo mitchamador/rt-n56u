@@ -43,5 +43,5 @@ sed '1,/^---- .*/d' rt-n56u-kms+intellij.sh | base64 -d | tar xzf -
 # wifi krack patch
 
 cd rt-n56u
-wget -q https://raw.githubusercontent.com/mitchamador/rt-n56u/master/rt-n56u-kms+intellij.sh -O - | bash
+wget -q https://raw.githubusercontent.com/mitchamador/rt-n56u/master/rt-n56u-mt762x_wifi_krack.sh -O - | bash
 
